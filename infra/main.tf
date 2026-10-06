@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 locals {
-  name     = "ticketing-${var.env}"
+  name = "ticketing-${var.env}"
   services = {
     user    = { path = "/api/users/*", priority = 10 }
     event   = { path = "/api/events*", priority = 20 }
