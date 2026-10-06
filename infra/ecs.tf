@@ -25,7 +25,7 @@ resource "aws_service_discovery_service" "svc" {
 }
 
 resource "aws_iam_role" "execution" {
-  name = "${local.name}-ecs-execution"
+  name               = "${local.name}-ecs-execution"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17"
     Statement = [{ Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" }, Action = "sts:AssumeRole" }]
@@ -38,7 +38,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
 }
 
 resource "aws_iam_role_policy" "read_secrets" {
-  role = aws_iam_role.execution.id
+  role   = aws_iam_role.execution.id
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = [{ Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = var.secrets_arn }]
@@ -53,10 +53,10 @@ resource "aws_cloudwatch_log_group" "svc" {
 
 locals {
   # Database URLs and the JWT secret come from one Secrets Manager secret (JSON keys).
-  db_names = { user = "users", event = "events", booking = "bookings" }
+  db_names  = { user = "users", event = "events", booking = "bookings" }
   extra_env = {
-    user  = []
-    event = []
+    user    = []
+    event   = []
     booking = [
       { name = "REDIS_HOST", value = var.redis_host },
       { name = "EVENT_SERVICE_URL", value = "http://event-service.${local.name}.local:8080" },
@@ -78,7 +78,7 @@ resource "aws_ecs_task_definition" "svc" {
     image        = "${aws_ecr_repository.svc[each.key].repository_url}:${var.image_tag}"
     essential    = true
     portMappings = [{ containerPort = 8080 }]
-    environment = concat([
+    environment  = concat([
       { name = "PORT", value = "8080" },
       { name = "DB_URL", value = "jdbc:postgresql://${var.db_host}:5432/${local.db_names[each.key]}" },
     ], local.extra_env[each.key])
@@ -89,7 +89,7 @@ resource "aws_ecs_task_definition" "svc" {
     ]
     logConfiguration = {
       logDriver = "awslogs"
-      options = {
+      options   = {
         awslogs-group         = aws_cloudwatch_log_group.svc[each.key].name
         awslogs-region        = var.region
         awslogs-stream-prefix = each.key
@@ -136,14 +136,14 @@ resource "aws_ecs_task_definition" "gateway" {
   cpu                      = 256
   memory                   = 512
   execution_role_arn       = aws_iam_role.execution.arn
-  container_definitions = jsonencode([{
-    name         = "gateway"
-    image        = "${aws_ecr_repository.svc["gateway"].repository_url}:${var.image_tag}"
-    essential    = true
-    portMappings = [{ containerPort = 80 }]
+  container_definitions    = jsonencode([{
+    name             = "gateway"
+    image            = "${aws_ecr_repository.svc["gateway"].repository_url}:${var.image_tag}"
+    essential        = true
+    portMappings     = [{ containerPort = 80 }]
     logConfiguration = {
       logDriver = "awslogs"
-      options = {
+      options   = {
         awslogs-group         = aws_cloudwatch_log_group.svc["gateway"].name
         awslogs-region        = var.region
         awslogs-stream-prefix = "gateway"
