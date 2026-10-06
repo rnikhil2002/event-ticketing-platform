@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/users}
+    username: ${DB_USER:ticketing}
+    password: ${DB_PASSWORD:ticketing}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-secret-that-is-at-least-32-bytes-long}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

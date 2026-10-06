@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8082}
+
+spring:
+  application:
+    name: event-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/events}
+    username: ${DB_USER:ticketing}
+    password: ${DB_PASSWORD:ticketing}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-secret-that-is-at-least-32-bytes-long}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

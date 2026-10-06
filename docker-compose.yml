@@ -1,0 +1,56 @@
+# Full stack on your machine: Postgres, Redis, three Spring Boot services and the React app.
+# Then open http://localhost:8080
+x-service-env: &env
+  DB_USER: ticketing
+  DB_PASSWORD: ticketing
+  JWT_SECRET: ${JWT_SECRET:-local-dev-secret-that-is-at-least-32-bytes-long}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ticketing
+      POSTGRES_PASSWORD: ticketing
+    volumes:
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketing"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  user-service:
+    build: { context: ., dockerfile: user-service/Dockerfile }
+    environment:
+      <<: *env
+      DB_URL: jdbc:postgresql://postgres:5432/users
+    depends_on: { postgres: { condition: service_healthy } }
+
+  event-service:
+    build: { context: ., dockerfile: event-service/Dockerfile }
+    environment:
+      <<: *env
+      DB_URL: jdbc:postgresql://postgres:5432/events
+    depends_on: { postgres: { condition: service_healthy } }
+
+  booking-service:
+    build: { context: ., dockerfile: booking-service/Dockerfile }
+    environment:
+      <<: *env
+      DB_URL: jdbc:postgresql://postgres:5432/bookings
+      REDIS_HOST: redis
+      EVENT_SERVICE_URL: http://event-service:8080
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  gateway:
+    build: { context: ., dockerfile: gateway/Dockerfile }
+    ports: ["8080:80"]
+    depends_on: [user-service, event-service, booking-service]
+
+volumes:
+  pg-data:
